@@ -83,10 +83,12 @@ binary.sources += [
   'frame_tasks.cpp',
   'smn_halflife.cpp',
   'FrameIterator.cpp',
+  'NativeInvoker.cpp',
 ]
 if builder.target.platform == 'windows':
   binary.sources += ['thread/WinThreads.cpp']
 else:
   binary.sources += ['thread/PosixThreads.cpp']
+
 
 SM.binaries += [builder.Add(binary)]
