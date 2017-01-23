@@ -307,7 +307,10 @@ public void __ext_core_SetNTVOptional()
 	MarkNativeAsOptional("Protobuf.ReadMessage");
 	MarkNativeAsOptional("Protobuf.ReadRepeatedMessage");
 	MarkNativeAsOptional("Protobuf.AddMessage");
-	
+
+	MarkNativeAsOptional("IsCommandCallback");
+	MarkNativeAsOptional("GetLastProcessTargetString");
+
 	VerifyCoreVersion();
 }
 
