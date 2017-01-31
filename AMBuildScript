@@ -200,7 +200,7 @@ class SMConfig(object):
       '-pipe',
       '-fno-strict-aliasing',
       '-Wall',
-      '-Werror',
+#      '-Werror',
       '-Wno-unused',
       '-Wno-switch',
       '-Wno-array-bounds',
