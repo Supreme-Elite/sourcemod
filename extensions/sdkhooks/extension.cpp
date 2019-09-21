@@ -112,6 +112,7 @@ IServerTools *servertools = NULL;
 
 // global hooks and forwards
 IForward *g_pOnEntityCreated = NULL;
+IForward *g_pOnEntitySpawned = NULL;
 IForward *g_pOnEntityDestroyed = NULL;
 
 #ifdef GAMEDESC_CAN_CHANGE
@@ -252,6 +253,7 @@ bool SDKHooks::SDK_OnLoad(char *error, size_t maxlength, bool late)
 	plsys->AddPluginsListener(&g_Interface);
 
 	g_pOnEntityCreated = forwards->CreateForward("OnEntityCreated", ET_Ignore, 2, NULL, Param_Cell, Param_String);
+	g_pOnEntitySpawned = forwards->CreateForward("OnEntitySpawned", ET_Ignore, 2, NULL, Param_Cell, Param_String);
 	g_pOnEntityDestroyed = forwards->CreateForward("OnEntityDestroyed", ET_Ignore, 1, NULL, Param_Cell);
 #ifdef GAMEDESC_CAN_CHANGE
 	g_pOnGetGameNameDescription = forwards->CreateForward("OnGetGameDescription", ET_Hook, 2, NULL, Param_String);
@@ -343,6 +345,7 @@ void SDKHooks::SDK_OnUnload()
 #endif
 
 	forwards->ReleaseForward(g_pOnEntityCreated);
+	forwards->ReleaseForward(g_pOnEntitySpawned);
 	forwards->ReleaseForward(g_pOnEntityDestroyed);
 #ifdef GAMEDESC_CAN_CHANGE
 	forwards->ReleaseForward(g_pOnGetGameNameDescription);
@@ -876,6 +879,27 @@ void SDKHooks::OnEntityCreated(CBaseEntity *pEntity)
 	{
 		HandleEntityCreated(pEntity, index, ref);
 	}
+}
+
+void SDKHooks::OnEntitySpawned(CBaseEntity *pEntity)
+{
+	// Call OnEntitySpawned forward
+	int ref = gamehelpers->EntityToReference(pEntity);
+	int index = gamehelpers->ReferenceToIndex(ref);
+
+	// This can be -1 for player ents before any players have connected
+	if ((unsigned)index == INVALID_EHANDLE_INDEX || (index > 0 && index <= playerhelpers->GetMaxClients()))
+	{
+		return;
+	}
+
+	if (!IsEntityIndexInRange(index))
+	{
+		g_pSM->LogError(myself, "SDKHooks::OnEntitySpawned - Got entity index out of range (%d)", index);
+		return;
+	}
+
+	HandleEntitySpawned(pEntity, index, ref);
 }
 
 #ifdef GAMEDESC_CAN_CHANGE
@@ -1788,6 +1812,32 @@ void SDKHooks::HandleEntityCreated(CBaseEntity *pEntity, int index, cell_t ref)
 	g_pOnEntityCreated->Execute(NULL);
 
 	m_EntityCache[index] = ref;
+}
+
+void SDKHooks::HandleEntitySpawned(CBaseEntity *pEntity, int index, cell_t ref)
+{
+	if (g_pOnEntitySpawned->GetFunctionCount() || m_EntListeners.size())
+	{
+		cell_t bcompatRef = gamehelpers->EntityToBCompatRef(pEntity);
+		const char *pName = gamehelpers->GetEntityClassname(pEntity);
+		if (!pName)
+			pName = "";
+
+		// Send OnEntitySpawned to SM listeners
+		for (SourceHook::List<ISMEntityListener *>::iterator iter = m_EntListeners.begin(); iter != m_EntListeners.end(); iter++)
+		{
+			ISMEntityListener *pListener = (*iter);
+			pListener->OnEntitySpawned(pEntity, pName);
+		}
+
+		// Call OnEntitySpawned forward
+		if (g_pOnEntitySpawned->GetFunctionCount())
+		{
+			g_pOnEntitySpawned->PushCell(bcompatRef);
+			g_pOnEntitySpawned->PushString(pName);
+			g_pOnEntitySpawned->Execute(NULL);
+		}
+	}
 }
 
 void SDKHooks::HandleEntityDeleted(CBaseEntity *pEntity)
