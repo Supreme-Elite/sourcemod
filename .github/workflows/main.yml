@@ -22,9 +22,9 @@ jobs:
           cd sourcemod/build
           sudo python ../configure.py --sdks css --enable-optimize
           sudo /home/runner/.local/bin/ambuild
-          sudo tar cfvz sourcemod-${GITHUB_REF##*/}.tar.gz package/
+          sudo tar cfvz sourcemod-1.11-fork.tar.gz package/
       - name: 'Upload Sourcemod'
         uses: actions/upload-artifact@v2
         with:
           name: sourcemod-package
-          path: sourcemod/build/sourcemod-${GITHUB_REF##*/}.tar.gz     
+          path: sourcemod/build/sourcemod-1.11-fork.tar.gz     
