@@ -1,0 +1,30 @@
+# This is a basic workflow to help you get started with Actions
+
+name: ${GITHUB_REF##*/}
+
+on:
+  push:
+    branches: [ 1.11-fork ]
+  pull_request:
+    branches: [ 1.11-fork ]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run build
+        run: |
+          sudo apt install -y git clang lib32stdc++-7-dev lib32z1-dev libc6-dev-i386 curl
+          sudo git clone --recursive https://github.com/BotoX/sourcemod.git -b 1.11-fork
+          sudo bash sourcemod/tools/checkout-deps.sh
+          sudo mkdir -p sourcemod/build
+          cd sourcemod/build
+          sudo python ../configure.py --sdks css --enable-optimize
+          sudo /home/runner/.local/bin/ambuild
+          sudo tar cfvz sourcemod-${GITHUB_REF##*/}.tar.gz package/
+      - name: 'Upload Sourcemod'
+        uses: actions/upload-artifact@v2
+        with:
+          name: sourcemod-package
+          path: sourcemod/build/sourcemod-${GITHUB_REF##*/}.tar.gz     
